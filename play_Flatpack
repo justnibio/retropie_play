@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+rp_module_id="play"
+rp_module_desc="Play! - Namco System 246/256 Emulator (Flatpak)"
+rp_module_help="ROM Extensions: .iso .bin .cue .chd .elf\n\nAssicurati che Flatpak sia installato e configurato correttamente."
+rp_module_licence="GPL https://purei.org/"
+rp_module_section="exp"
+rp_module_flags=""
+
+function depends_play() {
+    echo "Verifica dell'installazione di Flatpak..."
+    if ! command -v flatpak &> /dev/null; then
+        echo "Flatpak non è installato. Installazione in corso..."
+        sudo apt update
+        sudo apt install -y flatpak
+    fi
+
+    echo "Aggiunta di Flathub (se non esiste)..."
+    flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+}
+
+function install_bin_play() {
+    echo "Installazione di Play! tramite Flatpak (modalità utente)..."
+    flatpak install --user -y flathub org.purei.Play
+}
+
+function configure_play() {
+    echo "Configurazione di Play! in RetroPie..."
+    mkRomDir "system2x6"
+
+    addEmulator 0 "$md_id" "system2x6" "XINIT-WM:flatpak run --user org.purei.Play %ROM%"
+    addEmulator 1 "$md_id-guionly" "system2x6" "XINIT-WM:flatpak run --user org.purei.Play"
+    addSystem "system2x6"
+
+    # Concedi i permessi per accedere ai file BIOS e ROM
+    flatpak override --user org.purei.Play --filesystem=/home/pi/RetroPie/BIOS/system2x6
+    flatpak override --user org.purei.Play --filesystem=/home/pi/RetroPie/roms/system2x6
+
+    # Assicurati che i file BIOS non siano in sola lettura
+    sudo chmod -R 777 /home/pi/RetroPie/BIOS/system2x6 2>/dev/null
+
+    echo "Configurazione completata."
+}
+
+function remove_play() {
+    echo "Rimozione di Play! Flatpak..."
+    flatpak uninstall --user -y org.purei.Play
+}
